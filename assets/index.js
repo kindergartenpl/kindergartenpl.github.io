@@ -47,34 +47,43 @@ imageInput.addEventListener('change', (event) => {
 
     upload.classList.remove("upload_loaded");
     upload.classList.add("upload_loading");
-
-    upload.removeAttribute("selected")
+    upload.removeAttribute("selected");
 
     var file = imageInput.files[0];
-    var data = new FormData();
-    data.append("file", file);
-
-    fetch('https://x02.me/api/upload', {
-        method: 'POST',
-        body: data
-    })
-    .then(result => result.json())
-    .then(response => {
-        
-        var url = response.url;
-        upload.classList.remove("error_shown")
-        upload.setAttribute("selected", url);
-        upload.classList.add("upload_loaded");
-        upload.classList.remove("upload_loading");
-        upload.querySelector(".upload_uploaded").src = url;
-
-    })
-    .catch(error => {
-        console.error('Upload error:', error);
+    
+    // Sprawdź rozmiar zdjęcia (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
         upload.classList.remove("upload_loading");
         upload.classList.add("error_shown");
-        alert('Błąd przy wysyłaniu zdjęcia');
-    })
+        alert('Zdjęcie jest za duże (max 5MB)');
+        return;
+    }
+
+    var reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            var base64Data = e.target.result;
+            upload.classList.remove("error_shown");
+            upload.setAttribute("selected", base64Data);
+            upload.classList.add("upload_loaded");
+            upload.classList.remove("upload_loading");
+            upload.querySelector(".upload_uploaded").src = base64Data;
+        } catch (error) {
+            console.error('Error processing image:', error);
+            upload.classList.remove("upload_loading");
+            upload.classList.add("error_shown");
+            alert('Błąd przy wczytywaniu zdjęcia');
+        }
+    };
+    
+    reader.onerror = function() {
+        upload.classList.remove("upload_loading");
+        upload.classList.add("error_shown");
+        alert('Błąd przy czytaniu pliku');
+    };
+    
+    reader.readAsDataURL(file);
 
 })
 
