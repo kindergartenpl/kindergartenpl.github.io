@@ -47,31 +47,43 @@ imageInput.addEventListener('change', (event) => {
 
     upload.classList.remove("upload_loaded");
     upload.classList.add("upload_loading");
-
-    upload.removeAttribute("selected")
+    upload.removeAttribute("selected");
 
     var file = imageInput.files[0];
-    var data = new FormData();
-    data.append("image", file);
-
-    fetch('	https://api.imgur.com/3/image' ,{
-        method: 'POST',
-        headers: {
-            'Authorization': 'Client-ID c8c28d402435402'
-        },
-        body: data
-    })
-    .then(result => result.json())
-    .then(response => {
-        
-        var url = response.data.link;
-        upload.classList.remove("error_shown")
-        upload.setAttribute("selected", url);
-        upload.classList.add("upload_loaded");
+    
+    // Sprawdź rozmiar zdjęcia (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
         upload.classList.remove("upload_loading");
-        upload.querySelector(".upload_uploaded").src = url;
+        upload.classList.add("error_shown");
+        alert('Zdjęcie jest za duże (max 5MB)');
+        return;
+    }
 
-    })
+    var reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            var base64Data = e.target.result;
+            upload.classList.remove("error_shown");
+            upload.setAttribute("selected", base64Data);
+            upload.classList.add("upload_loaded");
+            upload.classList.remove("upload_loading");
+            upload.querySelector(".upload_uploaded").src = base64Data;
+        } catch (error) {
+            console.error('Error processing image:', error);
+            upload.classList.remove("upload_loading");
+            upload.classList.add("error_shown");
+            alert('Błąd przy wczytywaniu zdjęcia');
+        }
+    };
+    
+    reader.onerror = function() {
+        upload.classList.remove("upload_loading");
+        upload.classList.add("error_shown");
+        alert('Błąd przy czytaniu pliku');
+    };
+    
+    reader.readAsDataURL(file);
 
 })
 
